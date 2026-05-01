@@ -1,19 +1,41 @@
-"""Hallucination verifier: estimate unsupported claims."""
+"""Hallucination verifier using NLI support."""
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Union
+from verification.nli_shared import get_nli
 
 
-def run_hallucination_agent(answer: str, docs: List[Dict[str, object]]) -> Dict[str, object]:
-    evidence = " ".join(str(d["text"]).lower() for d in docs)
-    answer_tokens = [tok for tok in answer.lower().split() if len(tok) > 4]
-    unsupported = [tok for tok in answer_tokens if tok not in evidence]
-    unsupported_ratio = len(unsupported) / max(len(answer_tokens), 1)
-    passed = unsupported_ratio < 0.55
+def run_hallucination_agent(
+    answer: str,
+    docs: List[Union[Dict[str, object], str]],
+) -> Dict[str, object]:
+    if not docs:
+        return {
+            "agent": "hallucination",
+            "passed": False,
+            "score": 0.0,
+            "feedback": "No evidence documents provided.",
+        }
+    nli = get_nli()
+    best_score = 0.0
+    for doc in docs:
+        text = str(doc["text"]) if isinstance(doc, dict) else str(doc)
+        result = nli({"text": text, "text_pair": answer})
+        first = result[0] if isinstance(result, list) else result
+        label = str(first["label"]).upper()
+        raw = float(first["score"])
+        if label == "ENTAILMENT":
+            score = raw
+        elif label == "NEUTRAL":
+            score = raw * 0.4
+        else:
+            score = 0.0
+        best_score = max(best_score, score)
+    passed = best_score >= 0.5
     return {
         "agent": "hallucination",
         "passed": passed,
-        "score": round(1.0 - unsupported_ratio, 4),
+        "score": round(best_score, 4),
         "feedback": "" if passed else "Reduce claims not explicitly present in evidence.",
     }

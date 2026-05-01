@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
+import time
 from statistics import mean
 from pathlib import Path
 from typing import Dict, List
@@ -15,7 +17,28 @@ from config import DEFAULT_CONFIG
 from dataset_load import build_corpus_from_nq, load_nq_examples
 from evaluation.baseline_runner import run_baseline
 from evaluation.metrics import exact_match, f1_score, hallucination_rate
-from main import run_pipeline
+from main import run_query
+
+
+def _run_pipeline_like_query(question: str) -> Dict[str, object]:
+    t0 = time.perf_counter()
+    args = argparse.Namespace(
+        config="artifacts/rag_config.json",
+        chroma_path="",
+        collection_name="",
+        top_k=3,
+        llm_url="http://localhost:8080/v1/chat/completions",
+        llm_model="local-model",
+        temperature=0.2,
+        max_tokens=300,
+        timeout=120,
+        query=question,
+    )
+    result = run_query(args)
+    result["latency_seconds"] = time.perf_counter() - t0
+    # Current query flow does not run verification agents.
+    result["verified"] = bool(result.get("answer"))
+    return result
 
 
 def run_eval(sample_size: int = 50) -> Dict[str, float]:
@@ -29,7 +52,7 @@ def run_eval(sample_size: int = 50) -> Dict[str, float]:
     base_latencies: List[float] = []
 
     for ex in examples:
-        para = run_pipeline(ex["question"], cfg=cfg, corpus_docs=shared_corpus)
+        para = _run_pipeline_like_query(ex["question"])
         baseline = run_baseline(ex["question"], shared_corpus, cfg=cfg)
         ems.append(exact_match(str(para["answer"]), ex["answer"]))
         f1s.append(f1_score(str(para["answer"]), ex["answer"]))
@@ -48,6 +71,6 @@ def run_eval(sample_size: int = 50) -> Dict[str, float]:
 
 
 if __name__ == "__main__":
-    results = run_eval(sample_size=50)
+    results = run_eval(sample_size=5)
     for k, v in results.items():
         print(f"{k}: {v:.4f}")

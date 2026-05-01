@@ -1,21 +1,42 @@
-"""Consistency verifier: does answer align with retrieved evidence?"""
+"""Consistency verifier using NLI."""
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Union
+from verification.nli_shared import get_nli
 
 
-def run_consistency_agent(answer: str, docs: List[Dict[str, object]]) -> Dict[str, object]:
-    answer_words = set(answer.lower().split())
-    evidence_words = set()
+def run_consistency_agent(
+    answer: str,
+    docs: List[Union[Dict[str, object], str]],
+) -> Dict[str, object]:
+    if not docs:
+        return {
+            "agent": "consistency",
+            "passed": False,
+            "score": 0.0,
+            "feedback": "No documents retrieved.",
+        }
+
+    nli = get_nli()
+    best_score = 0.0
     for doc in docs:
-        evidence_words.update(str(doc["text"]).lower().split())
-    overlap = len(answer_words & evidence_words)
-    ratio = overlap / max(len(answer_words), 1)
-    passed = ratio >= 0.25
+        text = str(doc["text"]) if isinstance(doc, dict) else str(doc)
+        result = nli({"text": text, "text_pair": answer})
+        first = result[0] if isinstance(result, list) else result
+        label = str(first["label"]).upper()
+        raw = float(first["score"])
+        if label == "ENTAILMENT":
+            score = raw
+        elif label == "NEUTRAL":
+            score = raw * 0.3
+        else:
+            score = 0.0
+        best_score = max(best_score, score)
+    passed = best_score >= 0.4
     return {
         "agent": "consistency",
         "passed": passed,
-        "score": round(ratio, 4),
-        "feedback": "" if passed else "Ground more phrases directly in retrieved context.",
+        "score": round(best_score, 4),
+        "feedback": "" if passed else "Answer is inconsistent with retrieved documents.",
     }

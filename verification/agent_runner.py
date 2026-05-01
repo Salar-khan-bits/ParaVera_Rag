@@ -15,7 +15,7 @@ def run_verification_agents(
 ) -> Dict[str, object]:
     with ThreadPoolExecutor(max_workers=3) as pool:
         future_consistency = pool.submit(run_consistency_agent, answer, docs)
-        future_contradiction = pool.submit(run_contradiction_agent, answer)
+        future_contradiction = pool.submit(run_contradiction_agent, answer, docs)
         future_hallucination = pool.submit(run_hallucination_agent, answer, docs)
         agent_results = [
             future_consistency.result(),
