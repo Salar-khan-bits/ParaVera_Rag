@@ -1,0 +1,12 @@
+{
+  "encoder_model": "all-MiniLM-L6-v2",
+  "dim": 384,
+  "n_shards": 4,
+  "shard_files": [
+    "shard_0000.npz",
+    "shard_0001.npz",
+    "shard_0002.npz",
+    "shard_0003.npz"
+  ],
+  "space": "cosine"
+}

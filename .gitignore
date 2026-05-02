@@ -1,3 +1,33 @@
-artifacts/
+# Environments
+.venv/
+venv/
+env/
+
+# Python
 __pycache__/
-*.parquet
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+paraverrag.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Project artifacts (regenerable)
+chroma_db/
+eval_results.csv
+
+# Local env / secrets
+.env
+.env.*

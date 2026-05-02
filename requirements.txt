@@ -1,2 +1,10 @@
-requests
-datasets
+# For installs without pyproject.toml, use: pip install -r requirements.txt
+# Recommended: pip install -e .  (dependencies from pyproject.toml)
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+torch>=2.0.0
+transformers>=4.36.0
+datasets>=2.14.0
+requests>=2.28.0
+tqdm>=4.65.0
+# Optional sharded OpenCL scoring: pip install pyopencl  OR  pip install -e ".[opencl]"
