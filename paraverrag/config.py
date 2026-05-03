@@ -55,7 +55,7 @@ TORCH_DEVICE = os.environ.get("PARAVERAG_TORCH_DEVICE", "auto").strip().lower()
 
 LLM_URL = os.environ.get("PARAVERAG_LLM_URL", "http://localhost:8080/v1/chat/completions")
 LLM_MODEL = "llama3.2-3b"
-LLM_TEMPERATURE = 0.1
+LLM_TEMPERATURE = 0.0
 # QA often needs short lists or a few sentences; too low truncates before the model states supported facts.
 LLM_MAX_TOKENS = 256
 # Long wiki snippets + full gold answer in feedback can exceed local server context → HTTP 400.

@@ -24,7 +24,6 @@ from paraverrag.config import (
     LLM_URL,
     MAX_CHARS_PER_RETRIEVED_DOC,
     MAX_CORRECTION_ATTEMPTS,
-    MAX_GROUND_TRUTH_FEEDBACK_CHARS,
     RETRIEVAL_BACKEND,
     TORCH_DEVICE,
     TOP_K,
@@ -256,11 +255,15 @@ def run_with_self_correction(
                 release_peak_memory()
             return generated, attempt, True, verify_trace, timing_totals
 
-        gold_snip = _truncate(ground_truth, MAX_GROUND_TRUTH_FEEDBACK_CHARS)
-        feedback_lines = [
-            "Your previous answer did not match the correct answer. "
-            f"The correct answer is: {gold_snip}. Please adjust your answer accordingly."
-        ]
+        feedback_lines = []
+        for judge_name, judge_details in jdetails.get("judges", {}).items():
+            if judge_details.get("verdict") == "FAIL":
+                reason = judge_details.get("raw", "")[:200]
+                feedback_lines.append(
+                    f"The {judge_name} check failed. Reason: {reason}"
+                )
+        if not feedback_lines:
+            feedback_lines = ["Please review your answer for accuracy."]
         if _serialize_models:
             release_peak_memory()
 

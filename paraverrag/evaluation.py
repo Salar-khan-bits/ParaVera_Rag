@@ -17,7 +17,8 @@ use --pipeline both for serial+parallel comparison (~2× work and higher peak us
 Per-sample rows are written to a CSV (default ``./eval_results.csv``; see ``paraverrag.config`` / ``--results-csv``):
 ``query_id``, ``dataset``, ``question``, ``gold_answer``, ``predicted_answer``, ``em``, ``f1``,
 ``hallucination_flagged``, ``total_latency_s``, ``retrieval_latency_s``, ``scoring_latency_s`` (LLM answer generation),
-``verification_latency_s`` (triple-judge wall time), ``retries``, ``consistency_fired``, ``contradiction_fired``,
+``verification_latency_s`` (triple-judge wall time), ``judge_serial_sum_s`` (Σ per-judge LLM times),
+``retries``, ``consistency_fired``, ``contradiction_fired``,
 ``hallucination_fired`` (non-PASS verdict), ``mode`` (``sequential`` / ``parallel``). Optional ``trace_json`` if enabled in config.
 With ``--pipeline both``, the file contains two rows per sample (one per judge mode). The same table is printed at the end of the run.
 """
@@ -161,6 +162,7 @@ EVAL_CSV_CORE_FIELDNAMES = (
     "retrieval_latency_s",
     "scoring_latency_s",
     "verification_latency_s",
+    "judge_serial_sum_s",
     "retries",
     "consistency_fired",
     "contradiction_fired",
@@ -211,6 +213,7 @@ def _per_sample_metrics_row(
         "scoring_latency_s": timings.get("generate_s", 0.0),
         # Triple-judge LLM wall time (overlapped when mode=parallel).
         "verification_latency_s": timings.get("judges_s", 0.0),
+        "judge_serial_sum_s": timings.get("judges_serial_sum_s", 0.0),
         "retries": max(0, n_att - 1),
         "consistency_fired": _judge_fired(jf.get("consistency", "")),
         "contradiction_fired": _judge_fired(jf.get("contradiction", "")),
